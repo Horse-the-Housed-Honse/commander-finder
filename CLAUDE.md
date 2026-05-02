@@ -52,5 +52,14 @@ Static frontend app. No backend, no build step, no npm. Vanilla HTML/CSS/JS, dep
 - `--border`, `--border-hover` — gold-tinted border colors
 - `--accent1-rgb`, `--accent2-rgb` — set dynamically from selected colors for background gradient
 
+## Deploy workflow
+After any code change, run:
+```
+git add index.html && git commit -m "description of change" && git push
+```
+Site updates within ~60 seconds at **https://horse-the-housed-honse.github.io/commander-finder/**
+
+No build step, no CI — just push the file.
+
 ## Scryfall color identity convention
 Always stored internally as **lowercase** (`w u b r g`). Scryfall returns `color_identity` as uppercase (`["W","U","R"]`) — convert on ingest with `.map(c => c.toLowerCase())`.
