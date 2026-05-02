@@ -126,4 +126,5 @@ All state is in-memory JS variables. Nothing is persisted to localStorage or any
 - **No URL state:** Selecting Jeskai and sharing the URL doesn't preserve the selection. A `?colors=WUR` query param approach would fix this.
 - **No sorting:** Results sort alphabetically by anchor name (Scryfall default). EDHREC rank sort would be useful.
 - **Mobile layout:** The two-panel drawer (anchor left, partner right) stacks awkwardly below ~600px. Needs a responsive rework.
-- **Colorless commanders:** Colorless identity (`id=c`) is not in the presets and would need a sixth pip toggle.
+- **Colorless commanders:** ✅ Done — grey C pip added, mutually exclusive with colored pips.
+- **Variable color identity commanders:** Some cards (e.g. Faceless One, Clara Oswald) let the player choose their color identity at deck-building time. These could theoretically fill any missing color in a pairing. Currently the app shows them only at their printed identity. A future enhancement could flag these cards specially and let users explore what additional identities become reachable by including them.

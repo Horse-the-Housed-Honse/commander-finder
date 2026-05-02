@@ -16,8 +16,6 @@
     --white: #f5f0e8;
     --border: rgba(201,168,76,0.22);
     --border-hover: rgba(201,168,76,0.55);
-
-    /* Dynamic accent colors — overridden by JS */
     --accent1: #8b1a1a;
     --accent2: #1a3a5c;
     --accent3: #2a6a3a;
@@ -77,7 +75,6 @@
     max-width: 480px;
   }
 
-  /* Color pip toggles */
   .color-picker {
     display: flex; gap: 1.2rem; flex-wrap: wrap; justify-content: center;
   }
@@ -114,10 +111,17 @@
   .pip-B { background: #1a1020; color: #c8a0e8; border-color: rgba(200,160,232,0.3) !important; }
   .pip-R { background: #9c1a1a; color: #fff; }
   .pip-G { background: #1a6a2a; color: #fff; }
+  .pip-C { background: #7a7a7a; color: #f0ede8; border-color: rgba(200,195,185,0.3) !important; }
+
+  /* Colorless separator — thin divider between WUBRG and C */
+  .pip-divider {
+    width: 1px; height: 56px; align-self: center;
+    background: rgba(201,168,76,0.18);
+    flex-shrink: 0;
+  }
 
   .color-label { font-size: 0.78rem; color: rgba(245,240,232,0.45); letter-spacing: 0.06em; }
 
-  /* Nickname presets */
   .preset-row {
     display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center;
     max-width: 640px;
@@ -136,7 +140,6 @@
   }
   .preset-btn:hover { border-color: var(--border-hover); color: var(--gold); background: var(--surface2); }
 
-  /* Go button */
   #go-btn {
     background: linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.08));
     border: 1px solid rgba(201,168,76,0.5);
@@ -170,11 +173,11 @@
     transition: color 0.15s;
   }
   .scan-btn:hover { color: rgba(245,240,232,0.55); }
-  .scan-btn:disabled { cursor: default; }
+  .scan-btn:disabled { cursor: default; text-decoration: none; }
   #scan-result {
     margin-top: 0.55rem; font-size: 0.83rem; line-height: 1.6;
   }
-  .scan-ok   { color: #7ad09a; }
+  .scan-ok   { color: rgba(122,208,154,0.65); }
   .scan-warn { color: #e0b06a; }
 
   /* ── Results screen ── */
@@ -220,7 +223,6 @@
   }
   .back-btn:hover { color: var(--gold); border-color: var(--border-hover); }
 
-  /* ── Status ── */
   #status-bar {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: 6px; padding: 0.85rem 1.3rem; margin-bottom: 1.75rem;
@@ -235,7 +237,6 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── Controls ── */
   .controls {
     display: flex; flex-wrap: wrap; gap: 0.65rem;
     margin-bottom: 1.75rem; align-items: center;
@@ -259,7 +260,6 @@
     padding: 0.26rem 0.95rem; font-size: 0.82rem; color: var(--gold); white-space: nowrap;
   }
 
-  /* ── Sections ── */
   .section { margin-bottom: 2.75rem; }
   .section-header {
     display: flex; align-items: baseline; gap: 1rem;
@@ -272,7 +272,6 @@
   }
   .section-count { font-size: 0.82rem; color: rgba(245,240,232,0.35); font-style: italic; }
 
-  /* ── Group rows ── */
   .groups-list { display: flex; flex-direction: column; gap: 0.5rem; }
 
   .group-item {
@@ -329,7 +328,6 @@
   }
   .group-item.open .chevron { transform: rotate(180deg); color: var(--gold); }
 
-  /* ── Drawer ── */
   .group-drawer {
     display: none; background: var(--surface3); border-top: 1px solid var(--border);
   }
@@ -435,46 +433,48 @@
     <h1>Commander Partner Finder</h1>
     <p>Choose a color identity to search for every valid commander pairing that resolves to exactly those colors.</p>
 
-    <!-- Quick presets -->
     <div class="preset-row" id="presets"></div>
 
-    <!-- Color toggles -->
     <div class="color-picker">
       <label class="color-toggle">
-        <input type="checkbox" value="W" onchange="onColorChange()">
+        <input type="checkbox" value="W" onchange="onColorChange('W')">
         <div class="color-pip-btn pip-W">W</div>
         <span class="color-label">White</span>
       </label>
       <label class="color-toggle">
-        <input type="checkbox" value="U" onchange="onColorChange()">
+        <input type="checkbox" value="U" onchange="onColorChange('U')">
         <div class="color-pip-btn pip-U">U</div>
         <span class="color-label">Blue</span>
       </label>
       <label class="color-toggle">
-        <input type="checkbox" value="B" onchange="onColorChange()">
+        <input type="checkbox" value="B" onchange="onColorChange('B')">
         <div class="color-pip-btn pip-B">B</div>
         <span class="color-label">Black</span>
       </label>
       <label class="color-toggle">
-        <input type="checkbox" value="R" onchange="onColorChange()">
+        <input type="checkbox" value="R" onchange="onColorChange('R')">
         <div class="color-pip-btn pip-R">R</div>
         <span class="color-label">Red</span>
       </label>
       <label class="color-toggle">
-        <input type="checkbox" value="G" onchange="onColorChange()">
+        <input type="checkbox" value="G" onchange="onColorChange('G')">
         <div class="color-pip-btn pip-G">G</div>
         <span class="color-label">Green</span>
       </label>
+      <div class="pip-divider"></div>
+      <label class="color-toggle">
+        <input type="checkbox" value="C" onchange="onColorChange('C')">
+        <div class="color-pip-btn pip-C">C</div>
+        <span class="color-label">Colorless</span>
+      </label>
     </div>
 
-    <!-- Live identity preview -->
     <div class="identity-preview" id="identity-preview"></div>
 
     <button id="go-btn" onclick="startSearch()" disabled>Find Commanders</button>
 
-    <!-- New mechanic scanner -->
     <div id="scan-area">
-      <button class="scan-btn" onclick="runMechanicScan()">Scan Scryfall for unknown partner mechanics</button>
+      <button class="scan-btn" id="scan-btn" onclick="runMechanicScan()">Scan Scryfall for unknown partner mechanics</button>
       <div id="scan-result"></div>
     </div>
   </div>
@@ -494,7 +494,6 @@
     </div>
     <div id="error-container"></div>
 
-    <!-- Filter dropdown is populated from PARTNER_TYPES by JS -->
     <div class="controls" id="controls" style="display:none">
       <div class="filter-group">
         <label>Type</label>
@@ -515,16 +514,18 @@
 // ── Color identity data ───────────────────────────────────────────────────────
 
 const COLOR_DATA = {
-  W: { label: 'White', bg: '#e8e4cc', fg: '#2a2200', rgb: '232,228,204' },
-  U: { label: 'Blue',  bg: '#1a5a9c', fg: '#ffffff', rgb: '26,90,156' },
-  B: { label: 'Black', bg: '#1a1020', fg: '#c8a0e8', rgb: '26,16,32' },
-  R: { label: 'Red',   bg: '#9c1a1a', fg: '#ffffff', rgb: '156,26,26' },
-  G: { label: 'Green', bg: '#1a6a2a', fg: '#ffffff', rgb: '26,106,42' },
+  W: { label: 'White',    bg: '#e8e4cc', fg: '#2a2200', rgb: '232,228,204' },
+  U: { label: 'Blue',     bg: '#1a5a9c', fg: '#ffffff', rgb: '26,90,156' },
+  B: { label: 'Black',    bg: '#1a1020', fg: '#c8a0e8', rgb: '26,16,32' },
+  R: { label: 'Red',      bg: '#9c1a1a', fg: '#ffffff', rgb: '156,26,26' },
+  G: { label: 'Green',    bg: '#1a6a2a', fg: '#ffffff', rgb: '26,106,42' },
+  C: { label: 'Colorless',bg: '#7a7a7a', fg: '#f0ede8', rgb: '122,122,122' },
 };
 
 const COLOR_ORDER = ['W','U','B','R','G'];
 
 const PRESETS = [
+  { name: 'Colorless', colors: ['C'] },
   { name: 'Mono-White', colors: ['W'] },
   { name: 'Mono-Blue',  colors: ['U'] },
   { name: 'Mono-Black', colors: ['B'] },
@@ -569,13 +570,11 @@ const PRESETS = [
 //   key          — internal ID (also used as the CSS class suffix: tag-<key>)
 //   label        — short name shown on mechanic tags and in the filter dropdown
 //   sectionLabel — heading shown above that group in the results
-//   tagBg        — background color of the mechanic tag pill
-//   tagColor     — text color of the mechanic tag pill
-//   tagBorder    — border color of the mechanic tag pill
+//   tagBg/tagColor/tagBorder — colors for the mechanic tag pill
 //   detect(text) — function: returns true if a card's oracle text has this mechanic
 //   pairingRule  — how cards with this mechanic pair up:
-//                    'sameGroup'   → any card in the group pairs with any other (generic partner, FF, CS, etc.)
-//                    'partnerWith' → fixed named pairs (reads "Partner with [Name]" from oracle text)
+//                    'sameGroup'   → any card in the group pairs with any other
+//                    'partnerWith' → fixed named pairs (reads "Partner with [Name]")
 //                    'background'  → commander pairs with any Background enchantment
 //                    'doctor'      → companion pairs with any Time Lord Doctor
 //   namedSubtype — (optional) the exact text after "partner—" as it appears on the card.
@@ -657,7 +656,7 @@ const PARTNER_TYPES = [
   },
 ];
 
-// Inject CSS tag classes from the registry so colors stay in sync with PARTNER_TYPES
+// Inject CSS tag classes from the registry
 (function injectTagStyles() {
   const css = PARTNER_TYPES.map(pt =>
     `.tag-${pt.key} { background: ${pt.tagBg}; color: ${pt.tagColor}; border: 1px solid ${pt.tagBorder}; }`
@@ -667,14 +666,14 @@ const PARTNER_TYPES = [
   document.head.appendChild(style);
 })();
 
-// Derived from the registry — no need to update these manually
+// Derived from registry — do not edit manually
 const typeOrder = PARTNER_TYPES.map(pt => pt.key);
 const sectionMeta = Object.fromEntries(PARTNER_TYPES.map(pt => [
   pt.key,
   { label: pt.sectionLabel, tagClass: `tag-${pt.key}`, tagLabel: pt.label }
 ]));
 
-// Populate the filter dropdown from the registry
+// Populate filter dropdown from registry
 (function buildFilterDropdown() {
   const sel = document.getElementById('filter-type');
   sel.innerHTML =
@@ -697,7 +696,7 @@ function buildPresets() {
 }
 buildPresets();
 
-// ── Color picker helpers ──────────────────────────────────────────────────────
+// ── Color picker ──────────────────────────────────────────────────────────────
 
 function getSelectedColors() {
   return [...document.querySelectorAll('.color-picker input:checked')].map(i => i.value);
@@ -707,10 +706,19 @@ function setColors(colors) {
   document.querySelectorAll('.color-picker input').forEach(i => {
     i.checked = colors.includes(i.value);
   });
-  onColorChange();
+  // Treat as if the first color in the list was changed, to enforce mutual exclusivity
+  onColorChange(colors[0] || null);
 }
 
-function onColorChange() {
+// C (colorless) is mutually exclusive with all other colors — selecting C clears
+// W/U/B/R/G, and selecting any W/U/B/R/G clears C.
+function onColorChange(changedValue) {
+  if (changedValue === 'C') {
+    document.querySelectorAll('.color-picker input:not([value="C"])').forEach(i => i.checked = false);
+  } else if (changedValue) {
+    const cInput = document.querySelector('.color-picker input[value="C"]');
+    if (cInput) cInput.checked = false;
+  }
   const sel = getSelectedColors();
   updateIdentityPreview(sel);
   document.getElementById('go-btn').disabled = sel.length === 0;
@@ -719,6 +727,14 @@ function onColorChange() {
 function updateIdentityPreview(colors) {
   const el = document.getElementById('identity-preview');
   if (!colors.length) { el.innerHTML = ''; return; }
+
+  // Colorless shows a single grey C pip
+  if (colors.includes('C')) {
+    const d = COLOR_DATA['C'];
+    el.innerHTML = `<div style="width:28px;height:28px;border-radius:50%;background:${d.bg};color:${d.fg};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;border:2px solid rgba(255,255,255,0.25)">C</div>`;
+    return;
+  }
+
   el.innerHTML = COLOR_ORDER.filter(c => colors.includes(c)).map(c => {
     const d = COLOR_DATA[c];
     return `<div style="width:28px;height:28px;border-radius:50%;background:${d.bg};color:${d.fg};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;border:2px solid rgba(255,255,255,0.25)">${c}</div>`;
@@ -726,6 +742,12 @@ function updateIdentityPreview(colors) {
 }
 
 // ── Utility functions ─────────────────────────────────────────────────────────
+
+let TARGET = new Set();
+let groupMap = new Map();
+let soloCards = [];
+let partnerIndex = new Map();
+let activeGroupId = null;
 
 function isSubsetOfTarget(s) { for (const c of s) if (!TARGET.has(c)) return false; return true; }
 function isExactTarget(s) {
@@ -745,8 +767,15 @@ function imgUri(card) {
   if (card.card_faces) for (const f of card.card_faces) if (f.image_uris?.normal) return f.image_uris.normal;
   return null;
 }
-function scryfallId(colors) { return [...colors].map(c => c.toLowerCase()).join(''); }
+
+// Returns the Scryfall identity string (e.g. 'wur', or 'c' for colorless)
+function scryfallId(colors) {
+  if (colors.includes('C') || colors.length === 0) return 'c';
+  return [...colors].map(c => c.toLowerCase()).join('');
+}
+
 function identityName(colors) {
+  if (colors.includes('C') || colors.length === 0) return 'Colorless';
   const sorted = COLOR_ORDER.filter(c => colors.includes(c));
   const match = PRESETS.find(p =>
     p.colors.length === sorted.length && sorted.every(c => p.colors.includes(c))
@@ -768,12 +797,13 @@ async function fetchAll(query) {
   return cards;
 }
 
-// ── Pairing helpers (used by startSearch) ────────────────────────────────────
+// ── Pairing helpers ───────────────────────────────────────────────────────────
 
 function addPair(anchor, partner, type, tagClass, tagLabel) {
   const key = anchor.id;
   if (!groupMap.has(key)) groupMap.set(key, { anchor, partners: [], type, tagClass, tagLabel });
-  if (!groupMap.get(key).partners.find(p => p.id === partner.id))
+  // Deduplicate by name — multiple printings of the same card count as one
+  if (!groupMap.get(key).partners.find(p => p.name === partner.name))
     groupMap.get(key).partners.push(partner);
 }
 
@@ -782,20 +812,14 @@ function pairSameGroup(group, type, tagClass, tagLabel) {
     for (let j = 0; j < group.length; j++) {
       if (i === j) continue;
       const a = group[i], b = group[j];
+      // A card cannot partner with a different printing of itself
+      if (a.name === b.name) continue;
       if (isExactTarget(unionId(colorId(a), colorId(b))))
         addPair(a, b, type, tagClass, tagLabel);
     }
 }
 
-// ── State ─────────────────────────────────────────────────────────────────────
-
-let TARGET = new Set();
-let groupMap = new Map();
-let soloCards = [];
-let partnerIndex = new Map();
-let activeGroupId = null;
-
-// ── Search ────────────────────────────────────────────────────────────────────
+// ── Navigation ────────────────────────────────────────────────────────────────
 
 function goBack() {
   document.getElementById('results-screen').style.display = 'none';
@@ -810,11 +834,19 @@ function goBack() {
   document.getElementById('filter-type').value = 'all';
 }
 
+// ── Search ────────────────────────────────────────────────────────────────────
+
 async function startSearch() {
   const selectedUpper = getSelectedColors();
   if (!selectedUpper.length) return;
 
-  TARGET = new Set(selectedUpper.map(c => c.toLowerCase()));
+  const isColorless = selectedUpper.includes('C');
+
+  // For colorless, TARGET is an empty set — colorless cards have no color identity
+  TARGET = isColorless
+    ? new Set()
+    : new Set(selectedUpper.map(c => c.toLowerCase()));
+
   groupMap = new Map();
   soloCards = [];
   partnerIndex = new Map();
@@ -825,13 +857,21 @@ async function startSearch() {
   document.getElementById('results-subtitle').textContent =
     `Every legal pairing resolving to exactly ${name} identity — click a row, then ↑ ↓ to cycle partners`;
 
-  const manaHtml = COLOR_ORDER.filter(c => selectedUpper.includes(c)).map(c => {
-    const d = COLOR_DATA[c];
-    return `<div class="mpip" style="background:${d.bg};color:${d.fg};border-color:rgba(255,255,255,0.22)">${c}</div>`;
-  }).join('');
+  // Mana pip display — colorless gets a single grey C pip
+  let manaHtml;
+  if (isColorless) {
+    const d = COLOR_DATA['C'];
+    manaHtml = `<div class="mpip" style="background:${d.bg};color:${d.fg};border-color:rgba(255,255,255,0.22)">C</div>`;
+  } else {
+    manaHtml = COLOR_ORDER.filter(c => selectedUpper.includes(c)).map(c => {
+      const d = COLOR_DATA[c];
+      return `<div class="mpip" style="background:${d.bg};color:${d.fg};border-color:rgba(255,255,255,0.22)">${c}</div>`;
+    }).join('');
+  }
   document.getElementById('mana-display').innerHTML = manaHtml;
 
-  const accents = COLOR_ORDER.filter(c => selectedUpper.includes(c));
+  // Background accent gradient
+  const accents = isColorless ? ['C'] : COLOR_ORDER.filter(c => selectedUpper.includes(c));
   if (accents[0]) document.documentElement.style.setProperty('--accent1-rgb', COLOR_DATA[accents[0]].rgb);
   if (accents[1]) document.documentElement.style.setProperty('--accent2-rgb', COLOR_DATA[accents[1]].rgb);
 
@@ -862,7 +902,7 @@ async function startSearch() {
 
     setStatus('Computing pairings…');
 
-    // Bucket every card into its mechanic type using the registry's detect functions
+    // Bucket cards by mechanic type using the registry's detect functions
     const buckets = {};
     for (const pt of PARTNER_TYPES) {
       buckets[pt.key] = partnerables.filter(c => pt.detect(oracleText(c)));
@@ -923,17 +963,22 @@ async function startSearch() {
 
 // ── New mechanic scanner ──────────────────────────────────────────────────────
 //
-// Asks Scryfall for every card with "partner—" in its oracle text, extracts
-// all unique subtypes, and compares them against the namedSubtype entries in
-// PARTNER_TYPES. Any subtype not in the registry is reported as unknown.
+// Fetches every card with "partner—" in its oracle text, extracts all subtypes,
+// and compares against the namedSubtype entries in PARTNER_TYPES.
+//
+// Results are cached in localStorage for 7 days so it doesn't hit Scryfall on
+// every page load. The cache is refreshed automatically in the background when
+// it expires, and manually when the user clicks the scan button.
+
+const SCAN_CACHE_KEY = 'mechanic-scan-v1';
+const SCAN_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 
 async function scanForNewMechanics() {
   const cards = await fetchAll('o:"partner—"');
   const found = new Set();
-  for (const card of cards) {
+  for (const card of cards)
     for (const m of oracleText(card).matchAll(/partner—([^\n(,]+)/g))
       found.add(m[1].trim());
-  }
   const known = new Set(PARTNER_TYPES.filter(pt => pt.namedSubtype).map(pt => pt.namedSubtype));
   return {
     found: [...found].sort(),
@@ -941,27 +986,65 @@ async function scanForNewMechanics() {
   };
 }
 
+function applyScanResult(unknown, timestamp) {
+  const btn = document.getElementById('scan-btn');
+  const result = document.getElementById('scan-result');
+  const daysAgo = Math.floor((Date.now() - timestamp) / (1000 * 60 * 60 * 24));
+  const age = daysAgo === 0 ? 'just now' : `${daysAgo}d ago`;
+
+  if (unknown.length === 0) {
+    btn.textContent = `✓ All mechanics up to date (checked ${age})`;
+    btn.style.color = 'rgba(122,208,154,0.55)';
+    result.innerHTML = '';
+  } else {
+    btn.textContent = `⚠ ${unknown.length} unknown mechanic${unknown.length !== 1 ? 's' : ''} found — click to re-scan`;
+    btn.style.color = 'rgba(224,176,106,0.85)';
+    result.innerHTML = `<span class="scan-warn">Found: ${unknown.map(s => `<strong>partner—${s}</strong>`).join(', ')}<br>
+      <small>Ask Claude Code to add these to PARTNER_TYPES in index.html.</small></span>`;
+  }
+}
+
 async function runMechanicScan() {
-  const btn = document.querySelector('.scan-btn');
+  const btn = document.getElementById('scan-btn');
   const result = document.getElementById('scan-result');
   btn.disabled = true;
   btn.textContent = 'Scanning Scryfall…';
+  btn.style.color = '';
   result.innerHTML = '';
   try {
-    const { found, unknown } = await scanForNewMechanics();
-    if (unknown.length === 0) {
-      result.innerHTML = `<span class="scan-ok">✓ All ${found.length} known partner subtypes are registered. Nothing new found.</span>`;
-    } else {
-      result.innerHTML = `<span class="scan-warn">⚠ ${unknown.length} unknown subtype${unknown.length !== 1 ? 's' : ''} found on Scryfall:<br>
-        ${unknown.map(s => `<strong>partner—${s}</strong>`).join(', ')}<br>
-        <small>Add these to PARTNER_TYPES in index.html to support them.</small></span>`;
-    }
+    const { unknown } = await scanForNewMechanics();
+    const timestamp = Date.now();
+    localStorage.setItem(SCAN_CACHE_KEY, JSON.stringify({ timestamp, unknown }));
+    applyScanResult(unknown, timestamp);
   } catch(e) {
     result.innerHTML = `<span class="scan-warn">Scan error: ${e.message}</span>`;
+    btn.textContent = 'Scan Scryfall for unknown partner mechanics';
+    btn.style.color = '';
   }
   btn.disabled = false;
-  btn.textContent = 'Scan Scryfall for unknown partner mechanics';
 }
+
+// On page load: use cached result if fresh, otherwise scan silently in background
+(function autoScanOnLoad() {
+  try {
+    const cached = localStorage.getItem(SCAN_CACHE_KEY);
+    if (cached) {
+      const { timestamp, unknown } = JSON.parse(cached);
+      applyScanResult(unknown, timestamp);
+      if (Date.now() - timestamp < SCAN_CACHE_TTL) return; // cache still fresh
+    }
+  } catch(e) { /* corrupted cache — fall through to re-scan */ }
+
+  // Scan silently in the background; don't block page interaction
+  setTimeout(async () => {
+    try {
+      const { unknown } = await scanForNewMechanics();
+      const timestamp = Date.now();
+      localStorage.setItem(SCAN_CACHE_KEY, JSON.stringify({ timestamp, unknown }));
+      applyScanResult(unknown, timestamp);
+    } catch(e) { /* silent fail on auto-scan */ }
+  }, 2000);
+})();
 
 // ── Render ────────────────────────────────────────────────────────────────────
 
@@ -969,6 +1052,11 @@ function getIndex(id) { return partnerIndex.get(id) || 0; }
 function setIndex(id, i) { partnerIndex.set(id, i); }
 
 function pipHtml(idSet) {
+  // Colorless cards have an empty idSet — show a small grey C pip
+  if (idSet.size === 0) {
+    const d = COLOR_DATA['C'];
+    return `<div class="identity-pips"><span class="ipip" style="background:${d.bg};color:${d.fg}">C</span></div>`;
+  }
   return '<div class="identity-pips">' +
     COLOR_ORDER.map(c => c.toLowerCase()).filter(c => idSet.has(c)).map(c => {
       const d = COLOR_DATA[c.toUpperCase()];
@@ -977,6 +1065,10 @@ function pipHtml(idSet) {
 }
 
 function combinedPipHtml(idSet) {
+  if (idSet.size === 0) {
+    const d = COLOR_DATA['C'];
+    return `<span class="cpip" style="background:${d.bg};color:${d.fg}">C</span>`;
+  }
   return COLOR_ORDER.map(c => c.toLowerCase()).filter(c => idSet.has(c)).map(c => {
     const d = COLOR_DATA[c.toUpperCase()];
     return `<span class="cpip" style="background:${d.bg};color:${d.fg}">${c.toUpperCase()}</span>`;
@@ -1038,7 +1130,6 @@ function groupDrawerInnerHtml(gid, group) {
 }
 
 function groupRowHtml(gid, group) {
-  const idx = getIndex(gid);
   const total = group.partners.length;
   const isOpen = activeGroupId === gid;
   const preview = group.partners.slice(0,3).map(p=>`<em>${p.name}</em>`).join(', ')
