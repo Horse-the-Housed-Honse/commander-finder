@@ -160,6 +160,23 @@
     display: flex; gap: 0.5rem; align-items: center; min-height: 28px;
   }
 
+  /* Mechanic scanner */
+  #scan-area { text-align: center; }
+  .scan-btn {
+    background: none; border: none;
+    color: rgba(245,240,232,0.28);
+    font-family: 'Crimson Pro', serif; font-size: 0.82rem; font-style: italic;
+    cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+    transition: color 0.15s;
+  }
+  .scan-btn:hover { color: rgba(245,240,232,0.55); }
+  .scan-btn:disabled { cursor: default; }
+  #scan-result {
+    margin-top: 0.55rem; font-size: 0.83rem; line-height: 1.6;
+  }
+  .scan-ok   { color: #7ad09a; }
+  .scan-warn { color: #e0b06a; }
+
   /* ── Results screen ── */
   #results-screen { display: none; }
 
@@ -293,15 +310,11 @@
     border-radius: 3px; font-family: 'Crimson Pro', serif;
     letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; white-space: nowrap;
   }
-  .tag-partner     { background: rgba(26,58,92,0.6);  color: #7ab3e0; border: 1px solid rgba(122,179,224,0.3); }
-  .tag-partnerWith { background: rgba(60,20,80,0.6);  color: #c49ae0; border: 1px solid rgba(196,154,224,0.3); }
-  .tag-background  { background: rgba(20,70,30,0.6);  color: #7ad09a; border: 1px solid rgba(122,208,154,0.3); }
-  .tag-friends     { background: rgba(80,40,10,0.6);  color: #e0b06a; border: 1px solid rgba(224,176,106,0.3); }
-  .tag-doctor      { background: rgba(70,10,10,0.6);  color: #e07a7a; border: 1px solid rgba(224,122,122,0.3); }
-  .tag-solo        { background: rgba(80,70,10,0.6);  color: #d4c45a; border: 1px solid rgba(212,196,90,0.3); }
-  .tag-charselect  { background: rgba(10,60,70,0.6);  color: #6adce0; border: 1px solid rgba(106,220,224,0.3); }
-  .tag-fatherson   { background: rgba(50,30,10,0.6);  color: #d4a06a; border: 1px solid rgba(212,160,106,0.3); }
-  .tag-survivors   { background: rgba(30,50,10,0.6);  color: #a0d46a; border: 1px solid rgba(160,212,106,0.3); }
+
+  /* tag-solo is not in PARTNER_TYPES so stays here */
+  .tag-solo { background: rgba(80,70,10,0.6); color: #d4c45a; border: 1px solid rgba(212,196,90,0.3); }
+
+  /* All other .tag-* rules are injected from PARTNER_TYPES at runtime */
 
   .identity-pips { display: flex; gap: 3px; }
   .ipip {
@@ -458,6 +471,12 @@
     <div class="identity-preview" id="identity-preview"></div>
 
     <button id="go-btn" onclick="startSearch()" disabled>Find Commanders</button>
+
+    <!-- New mechanic scanner -->
+    <div id="scan-area">
+      <button class="scan-btn" onclick="runMechanicScan()">Scan Scryfall for unknown partner mechanics</button>
+      <div id="scan-result"></div>
+    </div>
   </div>
 
   <!-- ── SCREEN 2: Results ── -->
@@ -475,21 +494,11 @@
     </div>
     <div id="error-container"></div>
 
+    <!-- Filter dropdown is populated from PARTNER_TYPES by JS -->
     <div class="controls" id="controls" style="display:none">
       <div class="filter-group">
         <label>Type</label>
-        <select id="filter-type" onchange="renderAll()">
-          <option value="all">All</option>
-          <option value="partner">Partner</option>
-          <option value="partnerWith">Partner With</option>
-          <option value="background">Background</option>
-          <option value="friends">Friends Forever</option>
-          <option value="doctor">Doctor's Companion</option>
-          <option value="charselect">Character Select</option>
-          <option value="fatherson">Father &amp; Son</option>
-          <option value="survivors">Survivors</option>
-          <option value="solo">Solo</option>
-        </select>
+        <select id="filter-type" onchange="renderAll()"></select>
       </div>
       <div class="filter-group">
         <label>Search</label>
@@ -513,18 +522,14 @@ const COLOR_DATA = {
   G: { label: 'Green', bg: '#1a6a2a', fg: '#ffffff', rgb: '26,106,42' },
 };
 
-// Canonical ordering for display
 const COLOR_ORDER = ['W','U','B','R','G'];
 
-// All named identity presets (nickname → colors)
 const PRESETS = [
-  // Mono
   { name: 'Mono-White', colors: ['W'] },
   { name: 'Mono-Blue',  colors: ['U'] },
   { name: 'Mono-Black', colors: ['B'] },
   { name: 'Mono-Red',   colors: ['R'] },
   { name: 'Mono-Green', colors: ['G'] },
-  // Guilds
   { name: 'Azorius',   colors: ['W','U'] },
   { name: 'Dimir',     colors: ['U','B'] },
   { name: 'Rakdos',    colors: ['B','R'] },
@@ -535,38 +540,164 @@ const PRESETS = [
   { name: 'Golgari',   colors: ['B','G'] },
   { name: 'Boros',     colors: ['R','W'] },
   { name: 'Simic',     colors: ['G','U'] },
-  // Shards
   { name: 'Bant',      colors: ['G','W','U'] },
   { name: 'Esper',     colors: ['W','U','B'] },
   { name: 'Grixis',    colors: ['U','B','R'] },
   { name: 'Jund',      colors: ['B','R','G'] },
   { name: 'Naya',      colors: ['R','G','W'] },
-  // Wedges
   { name: 'Abzan',     colors: ['W','B','G'] },
   { name: 'Jeskai',    colors: ['U','R','W'] },
   { name: 'Sultai',    colors: ['B','G','U'] },
   { name: 'Mardu',     colors: ['R','W','B'] },
   { name: 'Temur',     colors: ['G','U','R'] },
-  // 4-color (Nephilim)
-  { name: 'Artifice',  colors: ['W','U','B','R'] },  // non-green
-  { name: 'Chaos',     colors: ['U','B','R','G'] },  // non-white
-  { name: 'Aggression',colors: ['B','R','G','W'] },  // non-blue
-  { name: 'Altruism',  colors: ['R','G','W','U'] },  // non-black
-  { name: 'Growth',    colors: ['G','W','U','B'] },  // non-red
-  // 5-color
+  { name: 'Artifice',  colors: ['W','U','B','R'] },
+  { name: 'Chaos',     colors: ['U','B','R','G'] },
+  { name: 'Aggression',colors: ['B','R','G','W'] },
+  { name: 'Altruism',  colors: ['R','G','W','U'] },
+  { name: 'Growth',    colors: ['G','W','U','B'] },
   { name: 'WUBRG',     colors: ['W','U','B','R','G'] },
 ];
 
-// Strixhaven college nicknames → color identity
-const NICKNAMES = {
-  silverquill: ['W','B'], prismari: ['U','R'], witherbloom: ['B','G'],
-  lorehold: ['R','W'], quandrix: ['G','U'],
-  // Innistrad
-  midnight: ['U','B','R'], crimson: ['B','R'],
-  // Misc fan nicknames sometimes used
-  ink: ['U','B'],        // Dimir alt name
-  dead: ['B','G'],       // Golgari alt
-};
+// ── Partner Mechanic Registry ─────────────────────────────────────────────────
+//
+// This is the single control center for all partner mechanics.
+// To support a new mechanic, add one entry to this array. Everything else
+// updates automatically: CSS tag colors, the filter dropdown, section headings,
+// detection, and pairing logic.
+//
+// Fields:
+//   key          — internal ID (also used as the CSS class suffix: tag-<key>)
+//   label        — short name shown on mechanic tags and in the filter dropdown
+//   sectionLabel — heading shown above that group in the results
+//   tagBg        — background color of the mechanic tag pill
+//   tagColor     — text color of the mechanic tag pill
+//   tagBorder    — border color of the mechanic tag pill
+//   detect(text) — function: returns true if a card's oracle text has this mechanic
+//   pairingRule  — how cards with this mechanic pair up:
+//                    'sameGroup'   → any card in the group pairs with any other (generic partner, FF, CS, etc.)
+//                    'partnerWith' → fixed named pairs (reads "Partner with [Name]" from oracle text)
+//                    'background'  → commander pairs with any Background enchantment
+//                    'doctor'      → companion pairs with any Time Lord Doctor
+//   namedSubtype — (optional) the exact text after "partner—" as it appears on the card.
+//                  Used by the Scryfall scanner to detect subtypes not yet in this list.
+
+const PARTNER_TYPES = [
+  {
+    key: 'partner',
+    label: 'Partner',
+    sectionLabel: 'Generic Partner',
+    tagBg: 'rgba(26,58,92,0.6)', tagColor: '#7ab3e0', tagBorder: 'rgba(122,179,224,0.3)',
+    detect: t =>
+      (t.includes('partner (you can have two commanders') || t.includes('partner\n(you can have two commanders'))
+      && !t.includes('partner—')
+      && !t.includes('partner with ')
+      && !t.includes('choose a background')
+      && !t.includes("doctor's companion"),
+    pairingRule: 'sameGroup',
+  },
+  {
+    key: 'partnerWith',
+    label: 'Partner With',
+    sectionLabel: 'Partner With (Fixed Pairs)',
+    tagBg: 'rgba(60,20,80,0.6)', tagColor: '#c49ae0', tagBorder: 'rgba(196,154,224,0.3)',
+    detect: t => t.includes('partner with '),
+    pairingRule: 'partnerWith',
+  },
+  {
+    key: 'background',
+    label: 'Background',
+    sectionLabel: 'Choose a Background',
+    tagBg: 'rgba(20,70,30,0.6)', tagColor: '#7ad09a', tagBorder: 'rgba(122,208,154,0.3)',
+    detect: t => t.includes('choose a background'),
+    pairingRule: 'background',
+  },
+  {
+    key: 'friends',
+    label: 'Friends Forever',
+    sectionLabel: 'Friends Forever',
+    tagBg: 'rgba(80,40,10,0.6)', tagColor: '#e0b06a', tagBorder: 'rgba(224,176,106,0.3)',
+    detect: t => t.includes('partner—friends forever') || t.includes('friends forever (you can have two'),
+    pairingRule: 'sameGroup',
+    namedSubtype: 'friends forever',
+  },
+  {
+    key: 'charselect',
+    label: 'Character Select',
+    sectionLabel: 'Character Select',
+    tagBg: 'rgba(10,60,70,0.6)', tagColor: '#6adce0', tagBorder: 'rgba(106,220,224,0.3)',
+    detect: t => t.includes('partner—character select'),
+    pairingRule: 'sameGroup',
+    namedSubtype: 'character select',
+  },
+  {
+    key: 'fatherson',
+    label: 'Father & Son',
+    sectionLabel: 'Father & Son',
+    tagBg: 'rgba(50,30,10,0.6)', tagColor: '#d4a06a', tagBorder: 'rgba(212,160,106,0.3)',
+    detect: t => t.includes('partner—father & son'),
+    pairingRule: 'sameGroup',
+    namedSubtype: 'father & son',
+  },
+  {
+    key: 'survivors',
+    label: 'Survivors',
+    sectionLabel: 'Survivors',
+    tagBg: 'rgba(30,50,10,0.6)', tagColor: '#a0d46a', tagBorder: 'rgba(160,212,106,0.3)',
+    detect: t => t.includes('partner—survivors'),
+    pairingRule: 'sameGroup',
+    namedSubtype: 'survivors',
+  },
+  {
+    key: 'doctor',
+    label: "Doctor's Companion",
+    sectionLabel: "Doctor's Companion",
+    tagBg: 'rgba(70,10,10,0.6)', tagColor: '#e07a7a', tagBorder: 'rgba(224,122,122,0.3)',
+    detect: t => t.includes("doctor's companion"),
+    pairingRule: 'doctor',
+  },
+];
+
+// Inject CSS tag classes from the registry so colors stay in sync with PARTNER_TYPES
+(function injectTagStyles() {
+  const css = PARTNER_TYPES.map(pt =>
+    `.tag-${pt.key} { background: ${pt.tagBg}; color: ${pt.tagColor}; border: 1px solid ${pt.tagBorder}; }`
+  ).join('\n');
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+})();
+
+// Derived from the registry — no need to update these manually
+const typeOrder = PARTNER_TYPES.map(pt => pt.key);
+const sectionMeta = Object.fromEntries(PARTNER_TYPES.map(pt => [
+  pt.key,
+  { label: pt.sectionLabel, tagClass: `tag-${pt.key}`, tagLabel: pt.label }
+]));
+
+// Populate the filter dropdown from the registry
+(function buildFilterDropdown() {
+  const sel = document.getElementById('filter-type');
+  sel.innerHTML =
+    '<option value="all">All</option>' +
+    PARTNER_TYPES.map(pt => `<option value="${pt.key}">${pt.label}</option>`).join('') +
+    '<option value="solo">Solo</option>';
+})();
+
+// ── Preset buttons ────────────────────────────────────────────────────────────
+
+function buildPresets() {
+  const container = document.getElementById('presets');
+  PRESETS.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn';
+    btn.textContent = p.name;
+    btn.onclick = () => setColors(p.colors);
+    container.appendChild(btn);
+  });
+}
+buildPresets();
+
+// ── Color picker helpers ──────────────────────────────────────────────────────
 
 function getSelectedColors() {
   return [...document.querySelectorAll('.color-picker input:checked')].map(i => i.value);
@@ -594,28 +725,7 @@ function updateIdentityPreview(colors) {
   }).join('');
 }
 
-// Build presets UI
-function buildPresets() {
-  const container = document.getElementById('presets');
-  // Only show presets up to 3 colors for space; can add more
-  PRESETS.forEach(p => {
-    const btn = document.createElement('button');
-    btn.className = 'preset-btn';
-    btn.textContent = p.name;
-    btn.onclick = () => setColors(p.colors);
-    container.appendChild(btn);
-  });
-}
-
-buildPresets();
-
-// ── Search logic ──────────────────────────────────────────────────────────────
-
-let TARGET = new Set();
-let groupMap = new Map();
-let soloCards = [];
-let partnerIndex = new Map();
-let activeGroupId = null;
+// ── Utility functions ─────────────────────────────────────────────────────────
 
 function isSubsetOfTarget(s) { for (const c of s) if (!TARGET.has(c)) return false; return true; }
 function isExactTarget(s) {
@@ -626,7 +736,7 @@ function isExactTarget(s) {
 function unionId(a, b) { return new Set([...a, ...b]); }
 function colorId(card) { return new Set((card.color_identity || []).map(c => c.toLowerCase())); }
 function oracleText(card) {
-  return (card.oracle_text || card.card_faces?.map(f=>f.oracle_text).join('\n') || '').toLowerCase();
+  return (card.oracle_text || card.card_faces?.map(f => f.oracle_text).join('\n') || '').toLowerCase();
 }
 function hasText(c, s) { return oracleText(c).includes(s); }
 function scryfallUrl(name) { return `https://scryfall.com/search?q=%21%22${encodeURIComponent(name)}%22`; }
@@ -634,6 +744,14 @@ function imgUri(card) {
   if (card.image_uris?.normal) return card.image_uris.normal;
   if (card.card_faces) for (const f of card.card_faces) if (f.image_uris?.normal) return f.image_uris.normal;
   return null;
+}
+function scryfallId(colors) { return [...colors].map(c => c.toLowerCase()).join(''); }
+function identityName(colors) {
+  const sorted = COLOR_ORDER.filter(c => colors.includes(c));
+  const match = PRESETS.find(p =>
+    p.colors.length === sorted.length && sorted.every(c => p.colors.includes(c))
+  );
+  return match ? match.name : sorted.join('');
 }
 
 async function fetchAll(query) {
@@ -650,19 +768,34 @@ async function fetchAll(query) {
   return cards;
 }
 
-// Build Scryfall color identity string for a set of color chars (uppercase)
-function scryfallId(colors) {
-  // Scryfall uses lowercase letters: w u b r g
-  return [...colors].map(c=>c.toLowerCase()).join('');
+// ── Pairing helpers (used by startSearch) ────────────────────────────────────
+
+function addPair(anchor, partner, type, tagClass, tagLabel) {
+  const key = anchor.id;
+  if (!groupMap.has(key)) groupMap.set(key, { anchor, partners: [], type, tagClass, tagLabel });
+  if (!groupMap.get(key).partners.find(p => p.id === partner.id))
+    groupMap.get(key).partners.push(partner);
 }
 
-function identityName(colors) {
-  const sorted = COLOR_ORDER.filter(c => colors.includes(c));
-  const match = PRESETS.find(p =>
-    p.colors.length === sorted.length && sorted.every(c => p.colors.includes(c))
-  );
-  return match ? match.name : sorted.join('');
+function pairSameGroup(group, type, tagClass, tagLabel) {
+  for (let i = 0; i < group.length; i++)
+    for (let j = 0; j < group.length; j++) {
+      if (i === j) continue;
+      const a = group[i], b = group[j];
+      if (isExactTarget(unionId(colorId(a), colorId(b))))
+        addPair(a, b, type, tagClass, tagLabel);
+    }
 }
+
+// ── State ─────────────────────────────────────────────────────────────────────
+
+let TARGET = new Set();
+let groupMap = new Map();
+let soloCards = [];
+let partnerIndex = new Map();
+let activeGroupId = null;
+
+// ── Search ────────────────────────────────────────────────────────────────────
 
 function goBack() {
   document.getElementById('results-screen').style.display = 'none';
@@ -678,7 +811,7 @@ function goBack() {
 }
 
 async function startSearch() {
-  const selectedUpper = getSelectedColors(); // ['W','U','R'] etc.
+  const selectedUpper = getSelectedColors();
   if (!selectedUpper.length) return;
 
   TARGET = new Set(selectedUpper.map(c => c.toLowerCase()));
@@ -687,31 +820,21 @@ async function startSearch() {
   partnerIndex = new Map();
   activeGroupId = null;
 
-  // Update results header
   const name = identityName(selectedUpper);
   document.getElementById('results-title').textContent = `${name} Commander Finder`;
   document.getElementById('results-subtitle').textContent =
     `Every legal pairing resolving to exactly ${name} identity — click a row, then ↑ ↓ to cycle partners`;
 
-  // Mana pip display
   const manaHtml = COLOR_ORDER.filter(c => selectedUpper.includes(c)).map(c => {
     const d = COLOR_DATA[c];
     return `<div class="mpip" style="background:${d.bg};color:${d.fg};border-color:rgba(255,255,255,0.22)">${c}</div>`;
   }).join('');
   document.getElementById('mana-display').innerHTML = manaHtml;
 
-  // Set background accent from first 2 colors
   const accents = COLOR_ORDER.filter(c => selectedUpper.includes(c));
-  if (accents[0]) {
-    const r = COLOR_DATA[accents[0]].rgb;
-    document.documentElement.style.setProperty('--accent1-rgb', r);
-  }
-  if (accents[1]) {
-    const r = COLOR_DATA[accents[1]].rgb;
-    document.documentElement.style.setProperty('--accent2-rgb', r);
-  }
+  if (accents[0]) document.documentElement.style.setProperty('--accent1-rgb', COLOR_DATA[accents[0]].rgb);
+  if (accents[1]) document.documentElement.style.setProperty('--accent2-rgb', COLOR_DATA[accents[1]].rgb);
 
-  // Switch screens
   document.getElementById('identity-screen').style.display = 'none';
   document.getElementById('results-screen').style.display = 'block';
   document.getElementById('status-bar').style.display = 'flex';
@@ -739,94 +862,53 @@ async function startSearch() {
 
     setStatus('Computing pairings…');
 
-    // Named partner subtypes — each can ONLY pair within its own group.
-    // Oracle text format: "partner—friends forever", "partner—character select",
-    // "partner—father & son", "partner—survivors"
-    // Generic partner: "partner (you can have two commanders if both have partner.)"
-    // — no dash, no subtype label.
-
-    const friendsForever   = partnerables.filter(c => oracleText(c).includes('partner—friends forever') || hasText(c, 'friends forever (you can have two'));
-    const characterSelect  = partnerables.filter(c => oracleText(c).includes('partner—character select'));
-    const fatherAndSon     = partnerables.filter(c => oracleText(c).includes('partner—father & son'));
-    const survivors        = partnerables.filter(c => oracleText(c).includes('partner—survivors'));
-
-    // Generic partner: has "partner" but none of the named subtypes, not "partner with", not a background mechanic, not doctor's companion
-    const genericPartner   = partnerables.filter(c => {
-      const t = oracleText(c);
-      return (t.includes('partner (you can have two commanders') || t.includes('partner\n(you can have two commanders'))
-        && !t.includes('partner—')
-        && !t.includes('partner with ')
-        && !t.includes('choose a background')
-        && !t.includes("doctor's companion");
-    });
-
-    const partnerWith      = partnerables.filter(c => oracleText(c).includes('partner with '));
-    const chooseBackground = partnerables.filter(c => hasText(c, 'choose a background'));
-    const doctorCompanion  = partnerables.filter(c => hasText(c, "doctor's companion"));
-
-    function addPair(anchor, partner, type, tagClass, tagLabel) {
-      const key = anchor.id; // use Scryfall card ID as key
-      if (!groupMap.has(key)) groupMap.set(key, { anchor, partners: [], type, tagClass, tagLabel });
-      // Avoid duplicate partners
-      if (!groupMap.get(key).partners.find(p => p.id === partner.id))
-        groupMap.get(key).partners.push(partner);
+    // Bucket every card into its mechanic type using the registry's detect functions
+    const buckets = {};
+    for (const pt of PARTNER_TYPES) {
+      buckets[pt.key] = partnerables.filter(c => pt.detect(oracleText(c)));
     }
 
-    // 1. Generic Partner × Generic Partner
-    for (let i = 0; i < genericPartner.length; i++)
-      for (let j = 0; j < genericPartner.length; j++) {
-        if (i === j) continue;
-        const a = genericPartner[i], b = genericPartner[j];
-        if (isExactTarget(unionId(colorId(a), colorId(b))))
-          addPair(a, b, 'partner', 'tag-partner', 'Partner');
-      }
+    // Pair each bucket according to its pairing rule
+    for (const pt of PARTNER_TYPES) {
+      const group = buckets[pt.key];
+      const tagClass = `tag-${pt.key}`;
 
-    // 2. Partner With
-    const pwSeen = new Set();
-    for (const card of partnerWith) {
-      const match = oracleText(card).match(/partner with ([^\n(]+)/i);
-      if (!match) continue;
-      const pName = match[1].trim().replace(/\s+/g,' ');
-      const partner = partnerables.find(c => c.name.toLowerCase() === pName.toLowerCase());
-      if (!partner) continue;
-      const key = [card.id, partner.id].sort().join('||');
-      if (pwSeen.has(key)) continue;
-      pwSeen.add(key);
-      if (isExactTarget(unionId(colorId(card), colorId(partner)))) {
-        addPair(card, partner, 'partnerWith', 'tag-partnerWith', 'Partner With');
-        addPair(partner, card, 'partnerWith', 'tag-partnerWith', 'Partner With');
-      }
-    }
+      if (pt.pairingRule === 'sameGroup') {
+        pairSameGroup(group, pt.key, tagClass, pt.label);
 
-    // 3. Choose a Background × Background
-    for (const cmd of chooseBackground)
-      for (const bg of backgrounds)
-        if (isExactTarget(unionId(colorId(cmd), colorId(bg))))
-          addPair(cmd, bg, 'background', 'tag-background', 'Background');
-
-    // 4. Named partner subtypes — each can ONLY pair within its own group
-    function pairNamedGroup(group, type, tagClass, tagLabel) {
-      for (let i = 0; i < group.length; i++)
-        for (let j = 0; j < group.length; j++) {
-          if (i === j) continue;
-          const a = group[i], b = group[j];
-          if (isExactTarget(unionId(colorId(a), colorId(b))))
-            addPair(a, b, type, tagClass, tagLabel);
+      } else if (pt.pairingRule === 'partnerWith') {
+        const pwSeen = new Set();
+        for (const card of group) {
+          const match = oracleText(card).match(/partner with ([^\n(]+)/i);
+          if (!match) continue;
+          const pName = match[1].trim().replace(/\s+/g, ' ');
+          const partner = partnerables.find(c => c.name.toLowerCase() === pName.toLowerCase());
+          if (!partner) continue;
+          const key = [card.id, partner.id].sort().join('||');
+          if (pwSeen.has(key)) continue;
+          pwSeen.add(key);
+          if (isExactTarget(unionId(colorId(card), colorId(partner)))) {
+            addPair(card, partner, pt.key, tagClass, pt.label);
+            addPair(partner, card, pt.key, tagClass, pt.label);
+          }
         }
-    }
-    pairNamedGroup(friendsForever,  'friends',    'tag-friends',    'Friends Forever');
-    pairNamedGroup(characterSelect, 'charselect', 'tag-charselect', 'Character Select');
-    pairNamedGroup(fatherAndSon,    'fatherson',  'tag-fatherson',  'Father & Son');
-    pairNamedGroup(survivors,       'survivors',  'tag-survivors',  'Survivors');
 
-    // 5. Doctor's Companion × Time Lord Doctor
-    for (const comp of doctorCompanion)
-      for (const doc of doctors)
-        if (isSubsetOfTarget(colorId(doc)) && isExactTarget(unionId(colorId(comp), colorId(doc))))
-          addPair(comp, doc, 'doctor', 'tag-doctor', "Doctor's Companion");
+      } else if (pt.pairingRule === 'background') {
+        for (const cmd of group)
+          for (const bg of backgrounds)
+            if (isExactTarget(unionId(colorId(cmd), colorId(bg))))
+              addPair(cmd, bg, pt.key, tagClass, pt.label);
+
+      } else if (pt.pairingRule === 'doctor') {
+        for (const comp of group)
+          for (const doc of doctors)
+            if (isSubsetOfTarget(colorId(doc)) && isExactTarget(unionId(colorId(comp), colorId(doc))))
+              addPair(comp, doc, pt.key, tagClass, pt.label);
+      }
+    }
 
     document.getElementById('spinner').style.display = 'none';
-    const totalPairs = [...groupMap.values()].reduce((s,g) => s + g.partners.length, 0);
+    const totalPairs = [...groupMap.values()].reduce((s, g) => s + g.partners.length, 0);
     setStatus(`Done — ${groupMap.size} anchor cards, ${totalPairs} pairings, ${soloCards.length} solo commanders.`);
     document.getElementById('controls').style.display = 'flex';
     renderAll();
@@ -839,33 +921,63 @@ async function startSearch() {
   }
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
+// ── New mechanic scanner ──────────────────────────────────────────────────────
+//
+// Asks Scryfall for every card with "partner—" in its oracle text, extracts
+// all unique subtypes, and compares them against the namedSubtype entries in
+// PARTNER_TYPES. Any subtype not in the registry is reported as unknown.
 
-const typeOrder = ['partner','partnerWith','background','friends','charselect','fatherson','survivors','doctor'];
-const sectionMeta = {
-  partner:     { label: 'Generic Partner',           tagClass: 'tag-partner',     tagLabel: 'Partner' },
-  partnerWith: { label: 'Partner With (Fixed Pairs)', tagClass: 'tag-partnerWith', tagLabel: 'Partner With' },
-  background:  { label: 'Choose a Background',       tagClass: 'tag-background',  tagLabel: 'Background' },
-  friends:     { label: 'Friends Forever',           tagClass: 'tag-friends',     tagLabel: 'Friends Forever' },
-  doctor:      { label: "Doctor's Companion",        tagClass: 'tag-doctor',      tagLabel: "Doctor's Companion" },
-  charselect:  { label: 'Character Select',            tagClass: 'tag-charselect',  tagLabel: 'Character Select' },
-  fatherson:   { label: 'Father & Son',                tagClass: 'tag-fatherson',   tagLabel: 'Father & Son' },
-  survivors:   { label: 'Survivors',                   tagClass: 'tag-survivors',   tagLabel: 'Survivors' },
-};
+async function scanForNewMechanics() {
+  const cards = await fetchAll('o:"partner—"');
+  const found = new Set();
+  for (const card of cards) {
+    for (const m of oracleText(card).matchAll(/partner—([^\n(,]+)/g))
+      found.add(m[1].trim());
+  }
+  const known = new Set(PARTNER_TYPES.filter(pt => pt.namedSubtype).map(pt => pt.namedSubtype));
+  return {
+    found: [...found].sort(),
+    unknown: [...found].filter(s => !known.has(s)).sort(),
+  };
+}
+
+async function runMechanicScan() {
+  const btn = document.querySelector('.scan-btn');
+  const result = document.getElementById('scan-result');
+  btn.disabled = true;
+  btn.textContent = 'Scanning Scryfall…';
+  result.innerHTML = '';
+  try {
+    const { found, unknown } = await scanForNewMechanics();
+    if (unknown.length === 0) {
+      result.innerHTML = `<span class="scan-ok">✓ All ${found.length} known partner subtypes are registered. Nothing new found.</span>`;
+    } else {
+      result.innerHTML = `<span class="scan-warn">⚠ ${unknown.length} unknown subtype${unknown.length !== 1 ? 's' : ''} found on Scryfall:<br>
+        ${unknown.map(s => `<strong>partner—${s}</strong>`).join(', ')}<br>
+        <small>Add these to PARTNER_TYPES in index.html to support them.</small></span>`;
+    }
+  } catch(e) {
+    result.innerHTML = `<span class="scan-warn">Scan error: ${e.message}</span>`;
+  }
+  btn.disabled = false;
+  btn.textContent = 'Scan Scryfall for unknown partner mechanics';
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
 
 function getIndex(id) { return partnerIndex.get(id) || 0; }
 function setIndex(id, i) { partnerIndex.set(id, i); }
 
 function pipHtml(idSet) {
   return '<div class="identity-pips">' +
-    COLOR_ORDER.map(c=>c.toLowerCase()).filter(c => idSet.has(c)).map(c => {
+    COLOR_ORDER.map(c => c.toLowerCase()).filter(c => idSet.has(c)).map(c => {
       const d = COLOR_DATA[c.toUpperCase()];
       return `<span class="ipip" style="background:${d.bg};color:${d.fg}">${c.toUpperCase()}</span>`;
     }).join('') + '</div>';
 }
 
 function combinedPipHtml(idSet) {
-  return COLOR_ORDER.map(c=>c.toLowerCase()).filter(c => idSet.has(c)).map(c => {
+  return COLOR_ORDER.map(c => c.toLowerCase()).filter(c => idSet.has(c)).map(c => {
     const d = COLOR_DATA[c.toUpperCase()];
     return `<span class="cpip" style="background:${d.bg};color:${d.fg}">${c.toUpperCase()}</span>`;
   }).join('');
@@ -1064,7 +1176,6 @@ function toggleGroup(event, gid) {
     if (group) {
       drawer.innerHTML = groupDrawerInnerHtml(gid, group);
     } else {
-      // solo
       const card = soloCards.find(c => 'solo::' + c.id === gid);
       if (card) drawer.innerHTML = `
         <div class="solo-drawer-inner">

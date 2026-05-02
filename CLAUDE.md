@@ -39,12 +39,9 @@ Static frontend app. No backend, no build step, no npm. Vanilla HTML/CSS/JS, dep
 - `step(event, gid, dir)` — advances partner index within an open group row
 
 ## When adding a new partner mechanic type
-1. Add oracle text detection in `startSearch()` (after existing subtype filters)
-2. Add pairing call (`pairNamedGroup` for same-subtype-only, custom loop otherwise)
-3. Add CSS `.tag-X` class (follow existing pattern)
-4. Add to `typeOrder` array
-5. Add to `sectionMeta` object
-6. Add `<option>` to the filter dropdown
+Add one entry to the `PARTNER_TYPES` array near the top of the `<script>` block. That's it — CSS tag colors, the filter dropdown, section headings, detection, and pairing logic are all derived from that array automatically.
+
+Each entry needs: `key`, `label`, `sectionLabel`, `tagBg`, `tagColor`, `tagBorder`, `detect(text)`, `pairingRule`. Add `namedSubtype` (the text after `partner—`) if it's a named subtype so the scanner can recognize it.
 
 ## CSS variable convention
 - `--gold`, `--gold-light` — primary accent color
