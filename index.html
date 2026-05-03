@@ -877,7 +877,6 @@ let viewMode = 'row';
 
 // ── Utility functions ─────────────────────────────────────────────────────────
 
-function isSubsetOfTarget(s) { for (const c of s) if (!TARGET.has(c)) return false; return true; }
 function isExactTarget(s) {
   if (s.size !== TARGET.size) return false;
   for (const c of s) if (!TARGET.has(c)) return false;
@@ -939,29 +938,14 @@ function addPair(anchor, partner, type, tagClass, tagLabel) {
     groupMap.get(key).partners.push(partner);
 }
 
-function addVariablePair(anchor, partner, type, tagClass, tagLabel) {
-  const declaredAs = new Set([...TARGET].filter(c => !colorId(anchor).has(c)));
-  const taggedPartner = { ...partner, _declaredAs: declaredAs };
-  const key = anchor.id;
-  if (!groupMap.has(key)) groupMap.set(key, { anchor, partners: [], type, tagClass, tagLabel });
-  if (!groupMap.get(key).partners.find(p => p.name === partner.name))
-    groupMap.get(key).partners.push(taggedPartner);
-}
-
-function pairSameGroup(group, type, tagClass, tagLabel, variableIds = new Set()) {
+function pairSameGroup(group, type, tagClass, tagLabel) {
   for (let i = 0; i < group.length; i++) {
     const a = group[i];
-    if (variableIds.has(a.id)) continue;
     for (let j = 0; j < group.length; j++) {
       if (i === j || a.name === group[j].name) continue;
       const b = group[j];
-      if (variableIds.has(b.id)) {
-        if (isSubsetOfTarget(colorId(a)))
-          addVariablePair(a, b, type, tagClass, tagLabel);
-      } else {
-        if (isExactTarget(unionId(colorId(a), colorId(b))))
-          addPair(a, b, type, tagClass, tagLabel);
-      }
+      if (isExactTarget(unionId(colorId(a), colorId(b))))
+        addPair(a, b, type, tagClass, tagLabel);
     }
   }
 }
@@ -1050,10 +1034,6 @@ async function startSearch() {
     setStatus('Fetching Time Lord Doctors…');
     const doctors = await fetchAll(`is:commander legal:commander t:"time lord" t:doctor`);
 
-    setStatus('Fetching variable-identity commanders…');
-    const variableCards = await fetchAll('is:chooseyourowncolor legal:commander');
-    const variableIds = new Set(variableCards.map(c => c.id));
-
     setStatus('Computing pairings…');
 
     const buckets = {};
@@ -1062,24 +1042,15 @@ async function startSearch() {
     }
 
     for (const pt of PARTNER_TYPES) {
-      const varInType = variableCards.filter(c => pt.detect(oracleText(c)));
-      for (const vc of varInType) {
-        if (!buckets[pt.key].find(c => c.id === vc.id))
-          buckets[pt.key].push(vc);
-      }
-    }
-
-    for (const pt of PARTNER_TYPES) {
       const group = buckets[pt.key];
       const tagClass = `tag-${pt.key}`;
 
       if (pt.pairingRule === 'sameGroup') {
-        pairSameGroup(group, pt.key, tagClass, pt.label, variableIds);
+        pairSameGroup(group, pt.key, tagClass, pt.label);
 
       } else if (pt.pairingRule === 'partnerWith') {
         const pwSeen = new Set();
         for (const card of group) {
-          if (variableIds.has(card.id)) continue;
           const match = oracleText(card).match(/partner with ([^\n(]+)/i);
           if (!match) continue;
           const pName = match[1].trim().replace(/\s+/g, ' ');
@@ -1096,29 +1067,17 @@ async function startSearch() {
 
       } else if (pt.pairingRule === 'background') {
         for (const cmd of group) {
-          if (variableIds.has(cmd.id)) continue;
           for (const bg of backgrounds) {
-            if (variableIds.has(bg.id)) {
-              if (isSubsetOfTarget(colorId(cmd)))
-                addVariablePair(cmd, bg, pt.key, tagClass, pt.label);
-            } else {
-              if (isExactTarget(unionId(colorId(cmd), colorId(bg))))
-                addPair(cmd, bg, pt.key, tagClass, pt.label);
-            }
+            if (isExactTarget(unionId(colorId(cmd), colorId(bg))))
+              addPair(cmd, bg, pt.key, tagClass, pt.label);
           }
         }
 
       } else if (pt.pairingRule === 'doctor') {
         for (const comp of group) {
-          if (variableIds.has(comp.id)) continue;
           for (const doc of doctors) {
-            if (variableIds.has(doc.id)) {
-              if (isSubsetOfTarget(colorId(comp)))
-                addVariablePair(comp, doc, pt.key, tagClass, pt.label);
-            } else {
-              if (isSubsetOfTarget(colorId(doc)) && isExactTarget(unionId(colorId(comp), colorId(doc))))
-                addPair(comp, doc, pt.key, tagClass, pt.label);
-            }
+            if (isSubsetOfTarget(colorId(doc)) && isExactTarget(unionId(colorId(comp), colorId(doc))))
+              addPair(comp, doc, pt.key, tagClass, pt.label);
           }
         }
       }
@@ -1255,19 +1214,9 @@ function cardBlockHtml(card, width) {
 
 function partnerDisplayHtml(group, idx) {
   const partner = group.partners[idx];
-  const isVariable = partner._declaredAs !== undefined;
-  const combined = isVariable ? TARGET : unionId(colorId(group.anchor), colorId(partner));
+  const combined = unionId(colorId(group.anchor), colorId(partner));
   const img = imgUri(partner);
   const large = imgUriLarge(partner);
-
-  let declaredNote = '';
-  if (isVariable) {
-    if (partner._declaredAs.size > 0) {
-      declaredNote = `<div class="declared-note">Declare as: ${combinedPipHtml(partner._declaredAs)}</div>`;
-    } else {
-      declaredNote = `<div class="declared-note">Declare as colorless (no extra colors needed)</div>`;
-    }
-  }
 
   return `
     ${img
@@ -1279,10 +1228,8 @@ function partnerDisplayHtml(group, idx) {
       <div class="ptype">${(partner.type_line||'').replace('Legendary Creature — ','').replace('Legendary Planeswalker — ','')}</div>
       <div class="pmechanic-row">
         <span class="mechanic-tag ${group.tagClass}">${group.tagLabel}</span>
-        ${isVariable ? '<span class="mechanic-tag tag-variable">Variable</span>' : ''}
         ${pipHtml(colorId(partner))}
       </div>
-      ${declaredNote}
       <div class="combined-label">Combined identity:</div>
       <div class="combined-pips">${combinedPipHtml(combined)}</div>
       <a class="scryfall-btn" href="${scryfallUrl(partner.name)}" target="_blank" style="margin-top:0.4rem">View on Scryfall ↗</a>
