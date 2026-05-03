@@ -113,7 +113,6 @@
   .pip-G { background: #1a6a2a; color: #fff; }
   .pip-C { background: #7a7a7a; color: #f0ede8; border-color: rgba(200,195,185,0.3) !important; }
 
-  /* Colorless separator — thin divider between WUBRG and C */
   .pip-divider {
     width: 1px; height: 56px; align-self: center;
     background: rgba(201,168,76,0.18);
@@ -174,9 +173,7 @@
   }
   .scan-btn:hover { color: rgba(245,240,232,0.55); }
   .scan-btn:disabled { cursor: default; text-decoration: none; }
-  #scan-result {
-    margin-top: 0.55rem; font-size: 0.83rem; line-height: 1.6;
-  }
+  #scan-result { margin-top: 0.55rem; font-size: 0.83rem; line-height: 1.6; }
   .scan-ok   { color: rgba(122,208,154,0.65); }
   .scan-warn { color: #e0b06a; }
 
@@ -310,10 +307,11 @@
     letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; white-space: nowrap;
   }
 
-  /* tag-solo is not in PARTNER_TYPES so stays here */
-  .tag-solo { background: rgba(80,70,10,0.6); color: #d4c45a; border: 1px solid rgba(212,196,90,0.3); }
+  /* tag-solo and tag-variable are not in PARTNER_TYPES so stay here */
+  .tag-solo     { background: rgba(80,70,10,0.6);  color: #d4c45a; border: 1px solid rgba(212,196,90,0.3); }
+  .tag-variable { background: rgba(40,10,70,0.6);  color: #c49ae0; border: 1px solid rgba(196,154,224,0.3); }
 
-  /* All other .tag-* rules are injected from PARTNER_TYPES at runtime */
+  /* All other .tag-* rules injected from PARTNER_TYPES at runtime */
 
   .identity-pips { display: flex; gap: 3px; }
   .ipip {
@@ -403,6 +401,14 @@
   .partner-info .pmechanic-row { display: flex; align-items: center; gap: 0.48rem; flex-wrap: wrap; }
   .partner-info .combined-label { font-size: 0.76rem; color: rgba(245,240,232,0.36); margin-top: 0.18rem; }
   .partner-info .combined-pips { display: flex; gap: 4px; margin-top: 0.08rem; }
+
+  /* "Declare as" note shown for variable-identity partners */
+  .declared-note {
+    display: flex; align-items: center; gap: 0.38rem; flex-wrap: wrap;
+    font-size: 0.76rem; color: rgba(196,154,224,0.8);
+    background: rgba(40,10,70,0.28); border: 1px solid rgba(196,154,224,0.2);
+    border-radius: 4px; padding: 0.28rem 0.55rem; margin-top: 0.1rem;
+  }
 
   .cpip {
     width: 17px; height: 17px; border-radius: 50%; font-size: 0.62rem;
@@ -577,8 +583,7 @@ const PRESETS = [
 //                    'partnerWith' → fixed named pairs (reads "Partner with [Name]")
 //                    'background'  → commander pairs with any Background enchantment
 //                    'doctor'      → companion pairs with any Time Lord Doctor
-//   namedSubtype — (optional) the exact text after "partner—" as it appears on the card.
-//                  Used by the Scryfall scanner to detect subtypes not yet in this list.
+//   namedSubtype — (optional) the exact text after "partner—", used by the scanner
 
 const PARTNER_TYPES = [
   {
@@ -706,12 +711,10 @@ function setColors(colors) {
   document.querySelectorAll('.color-picker input').forEach(i => {
     i.checked = colors.includes(i.value);
   });
-  // Treat as if the first color in the list was changed, to enforce mutual exclusivity
   onColorChange(colors[0] || null);
 }
 
-// C (colorless) is mutually exclusive with all other colors — selecting C clears
-// W/U/B/R/G, and selecting any W/U/B/R/G clears C.
+// C (colorless) is mutually exclusive with W/U/B/R/G
 function onColorChange(changedValue) {
   if (changedValue === 'C') {
     document.querySelectorAll('.color-picker input:not([value="C"])').forEach(i => i.checked = false);
@@ -727,27 +730,26 @@ function onColorChange(changedValue) {
 function updateIdentityPreview(colors) {
   const el = document.getElementById('identity-preview');
   if (!colors.length) { el.innerHTML = ''; return; }
-
-  // Colorless shows a single grey C pip
   if (colors.includes('C')) {
     const d = COLOR_DATA['C'];
     el.innerHTML = `<div style="width:28px;height:28px;border-radius:50%;background:${d.bg};color:${d.fg};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;border:2px solid rgba(255,255,255,0.25)">C</div>`;
     return;
   }
-
   el.innerHTML = COLOR_ORDER.filter(c => colors.includes(c)).map(c => {
     const d = COLOR_DATA[c];
     return `<div style="width:28px;height:28px;border-radius:50%;background:${d.bg};color:${d.fg};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;border:2px solid rgba(255,255,255,0.25)">${c}</div>`;
   }).join('');
 }
 
-// ── Utility functions ─────────────────────────────────────────────────────────
+// ── State ─────────────────────────────────────────────────────────────────────
 
 let TARGET = new Set();
 let groupMap = new Map();
 let soloCards = [];
 let partnerIndex = new Map();
 let activeGroupId = null;
+
+// ── Utility functions ─────────────────────────────────────────────────────────
 
 function isSubsetOfTarget(s) { for (const c of s) if (!TARGET.has(c)) return false; return true; }
 function isExactTarget(s) {
@@ -760,20 +762,16 @@ function colorId(card) { return new Set((card.color_identity || []).map(c => c.t
 function oracleText(card) {
   return (card.oracle_text || card.card_faces?.map(f => f.oracle_text).join('\n') || '').toLowerCase();
 }
-function hasText(c, s) { return oracleText(c).includes(s); }
 function scryfallUrl(name) { return `https://scryfall.com/search?q=%21%22${encodeURIComponent(name)}%22`; }
 function imgUri(card) {
   if (card.image_uris?.normal) return card.image_uris.normal;
   if (card.card_faces) for (const f of card.card_faces) if (f.image_uris?.normal) return f.image_uris.normal;
   return null;
 }
-
-// Returns the Scryfall identity string (e.g. 'wur', or 'c' for colorless)
 function scryfallId(colors) {
   if (colors.includes('C') || colors.length === 0) return 'c';
   return [...colors].map(c => c.toLowerCase()).join('');
 }
-
 function identityName(colors) {
   if (colors.includes('C') || colors.length === 0) return 'Colorless';
   const sorted = COLOR_ORDER.filter(c => colors.includes(c));
@@ -807,16 +805,40 @@ function addPair(anchor, partner, type, tagClass, tagLabel) {
     groupMap.get(key).partners.push(partner);
 }
 
-function pairSameGroup(group, type, tagClass, tagLabel) {
-  for (let i = 0; i < group.length; i++)
+// Like addPair, but stores _declaredAs so the drawer can show "declare as [colors]".
+// Used when the partner has a variable color identity (is:chooseyourowncolor).
+// The declared colors are whatever TARGET colors the anchor doesn't already cover.
+function addVariablePair(anchor, partner, type, tagClass, tagLabel) {
+  const declaredAs = new Set([...TARGET].filter(c => !colorId(anchor).has(c)));
+  const taggedPartner = { ...partner, _declaredAs: declaredAs };
+  const key = anchor.id;
+  if (!groupMap.has(key)) groupMap.set(key, { anchor, partners: [], type, tagClass, tagLabel });
+  if (!groupMap.get(key).partners.find(p => p.name === partner.name))
+    groupMap.get(key).partners.push(taggedPartner);
+}
+
+// Pairs all cards in a group with each other (same-subtype rule).
+// variableIds: Set of card IDs that are variable-identity (is:chooseyourowncolor).
+//   - Variable cards are never anchors (they only appear as partners).
+//   - A variable card is a valid partner for anchor A if colorId(A) ⊆ TARGET,
+//     because the variable card is declared as the remaining colors to reach TARGET.
+function pairSameGroup(group, type, tagClass, tagLabel, variableIds = new Set()) {
+  for (let i = 0; i < group.length; i++) {
+    const a = group[i];
+    if (variableIds.has(a.id)) continue; // variable cards never anchor
     for (let j = 0; j < group.length; j++) {
-      if (i === j) continue;
-      const a = group[i], b = group[j];
-      // A card cannot partner with a different printing of itself
-      if (a.name === b.name) continue;
-      if (isExactTarget(unionId(colorId(a), colorId(b))))
-        addPair(a, b, type, tagClass, tagLabel);
+      if (i === j || a.name === group[j].name) continue; // no self-pairing
+      const b = group[j];
+      if (variableIds.has(b.id)) {
+        // b declares itself as whatever colors a is missing
+        if (isSubsetOfTarget(colorId(a)))
+          addVariablePair(a, b, type, tagClass, tagLabel);
+      } else {
+        if (isExactTarget(unionId(colorId(a), colorId(b))))
+          addPair(a, b, type, tagClass, tagLabel);
+      }
     }
+  }
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -841,11 +863,7 @@ async function startSearch() {
   if (!selectedUpper.length) return;
 
   const isColorless = selectedUpper.includes('C');
-
-  // For colorless, TARGET is an empty set — colorless cards have no color identity
-  TARGET = isColorless
-    ? new Set()
-    : new Set(selectedUpper.map(c => c.toLowerCase()));
+  TARGET = isColorless ? new Set() : new Set(selectedUpper.map(c => c.toLowerCase()));
 
   groupMap = new Map();
   soloCards = [];
@@ -857,7 +875,6 @@ async function startSearch() {
   document.getElementById('results-subtitle').textContent =
     `Every legal pairing resolving to exactly ${name} identity — click a row, then ↑ ↓ to cycle partners`;
 
-  // Mana pip display — colorless gets a single grey C pip
   let manaHtml;
   if (isColorless) {
     const d = COLOR_DATA['C'];
@@ -870,7 +887,6 @@ async function startSearch() {
   }
   document.getElementById('mana-display').innerHTML = manaHtml;
 
-  // Background accent gradient
   const accents = isColorless ? ['C'] : COLOR_ORDER.filter(c => selectedUpper.includes(c));
   if (accents[0]) document.documentElement.style.setProperty('--accent1-rgb', COLOR_DATA[accents[0]].rgb);
   if (accents[1]) document.documentElement.style.setProperty('--accent2-rgb', COLOR_DATA[accents[1]].rgb);
@@ -900,12 +916,30 @@ async function startSearch() {
     setStatus('Fetching Time Lord Doctors…');
     const doctors = await fetchAll(`is:commander legal:commander t:"time lord" t:doctor`);
 
+    // Variable-identity commanders (e.g. Faceless One, Clara Oswald) have no
+    // printed color identity but let you choose colors when building the deck.
+    // Scryfall tags these with is:chooseyourowncolor.
+    // They appear only as partners, never as anchors, declared as whatever
+    // colors the anchor is missing to exactly reach TARGET.
+    setStatus('Fetching variable-identity commanders…');
+    const variableCards = await fetchAll('is:chooseyourowncolor legal:commander');
+    const variableIds = new Set(variableCards.map(c => c.id));
+
     setStatus('Computing pairings…');
 
-    // Bucket cards by mechanic type using the registry's detect functions
+    // Bucket cards by mechanic type
     const buckets = {};
     for (const pt of PARTNER_TYPES) {
       buckets[pt.key] = partnerables.filter(c => pt.detect(oracleText(c)));
+    }
+
+    // Also bucket variable cards by their own mechanic so they land in the right section
+    for (const pt of PARTNER_TYPES) {
+      const varInType = variableCards.filter(c => pt.detect(oracleText(c)));
+      for (const vc of varInType) {
+        if (!buckets[pt.key].find(c => c.id === vc.id))
+          buckets[pt.key].push(vc);
+      }
     }
 
     // Pair each bucket according to its pairing rule
@@ -914,11 +948,12 @@ async function startSearch() {
       const tagClass = `tag-${pt.key}`;
 
       if (pt.pairingRule === 'sameGroup') {
-        pairSameGroup(group, pt.key, tagClass, pt.label);
+        pairSameGroup(group, pt.key, tagClass, pt.label, variableIds);
 
       } else if (pt.pairingRule === 'partnerWith') {
         const pwSeen = new Set();
         for (const card of group) {
+          if (variableIds.has(card.id)) continue; // skip variable cards as anchors
           const match = oracleText(card).match(/partner with ([^\n(]+)/i);
           if (!match) continue;
           const pName = match[1].trim().replace(/\s+/g, ' ');
@@ -934,16 +969,32 @@ async function startSearch() {
         }
 
       } else if (pt.pairingRule === 'background') {
-        for (const cmd of group)
-          for (const bg of backgrounds)
-            if (isExactTarget(unionId(colorId(cmd), colorId(bg))))
-              addPair(cmd, bg, pt.key, tagClass, pt.label);
+        for (const cmd of group) {
+          if (variableIds.has(cmd.id)) continue;
+          for (const bg of backgrounds) {
+            if (variableIds.has(bg.id)) {
+              if (isSubsetOfTarget(colorId(cmd)))
+                addVariablePair(cmd, bg, pt.key, tagClass, pt.label);
+            } else {
+              if (isExactTarget(unionId(colorId(cmd), colorId(bg))))
+                addPair(cmd, bg, pt.key, tagClass, pt.label);
+            }
+          }
+        }
 
       } else if (pt.pairingRule === 'doctor') {
-        for (const comp of group)
-          for (const doc of doctors)
-            if (isSubsetOfTarget(colorId(doc)) && isExactTarget(unionId(colorId(comp), colorId(doc))))
-              addPair(comp, doc, pt.key, tagClass, pt.label);
+        for (const comp of group) {
+          if (variableIds.has(comp.id)) continue;
+          for (const doc of doctors) {
+            if (variableIds.has(doc.id)) {
+              if (isSubsetOfTarget(colorId(comp)))
+                addVariablePair(comp, doc, pt.key, tagClass, pt.label);
+            } else {
+              if (isSubsetOfTarget(colorId(doc)) && isExactTarget(unionId(colorId(comp), colorId(doc))))
+                addPair(comp, doc, pt.key, tagClass, pt.label);
+            }
+          }
+        }
       }
     }
 
@@ -962,16 +1013,9 @@ async function startSearch() {
 }
 
 // ── New mechanic scanner ──────────────────────────────────────────────────────
-//
-// Fetches every card with "partner—" in its oracle text, extracts all subtypes,
-// and compares against the namedSubtype entries in PARTNER_TYPES.
-//
-// Results are cached in localStorage for 7 days so it doesn't hit Scryfall on
-// every page load. The cache is refreshed automatically in the background when
-// it expires, and manually when the user clicks the scan button.
 
 const SCAN_CACHE_KEY = 'mechanic-scan-v1';
-const SCAN_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+const SCAN_CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
 
 async function scanForNewMechanics() {
   const cards = await fetchAll('o:"partner—"');
@@ -1024,25 +1068,22 @@ async function runMechanicScan() {
   btn.disabled = false;
 }
 
-// On page load: use cached result if fresh, otherwise scan silently in background
 (function autoScanOnLoad() {
   try {
     const cached = localStorage.getItem(SCAN_CACHE_KEY);
     if (cached) {
       const { timestamp, unknown } = JSON.parse(cached);
       applyScanResult(unknown, timestamp);
-      if (Date.now() - timestamp < SCAN_CACHE_TTL) return; // cache still fresh
+      if (Date.now() - timestamp < SCAN_CACHE_TTL) return;
     }
-  } catch(e) { /* corrupted cache — fall through to re-scan */ }
-
-  // Scan silently in the background; don't block page interaction
+  } catch(e) { /* corrupted cache — fall through */ }
   setTimeout(async () => {
     try {
       const { unknown } = await scanForNewMechanics();
       const timestamp = Date.now();
       localStorage.setItem(SCAN_CACHE_KEY, JSON.stringify({ timestamp, unknown }));
       applyScanResult(unknown, timestamp);
-    } catch(e) { /* silent fail on auto-scan */ }
+    } catch(e) { /* silent fail */ }
   }, 2000);
 })();
 
@@ -1052,7 +1093,6 @@ function getIndex(id) { return partnerIndex.get(id) || 0; }
 function setIndex(id, i) { partnerIndex.set(id, i); }
 
 function pipHtml(idSet) {
-  // Colorless cards have an empty idSet — show a small grey C pip
   if (idSet.size === 0) {
     const d = COLOR_DATA['C'];
     return `<div class="identity-pips"><span class="ipip" style="background:${d.bg};color:${d.fg}">C</span></div>`;
@@ -1087,8 +1127,25 @@ function cardBlockHtml(card, width) {
 
 function partnerDisplayHtml(group, idx) {
   const partner = group.partners[idx];
-  const combined = unionId(colorId(group.anchor), colorId(partner));
+  const isVariable = partner._declaredAs !== undefined;
+
+  // For variable partners: combined identity is TARGET; for normal: actual union
+  const combined = isVariable ? TARGET : unionId(colorId(group.anchor), colorId(partner));
+
   const img = imgUri(partner);
+
+  // "Declare as" note shown only for variable-identity partners
+  let declaredNote = '';
+  if (isVariable) {
+    if (partner._declaredAs.size > 0) {
+      declaredNote = `<div class="declared-note">
+        Declare as: ${combinedPipHtml(partner._declaredAs)}
+      </div>`;
+    } else {
+      declaredNote = `<div class="declared-note">Declare as colorless (no extra colors needed)</div>`;
+    }
+  }
+
   return `
     ${img
       ? `<div class="card-block"><img src="${img}" alt="${partner.name}" width="175" loading="lazy"></div>`
@@ -1098,8 +1155,10 @@ function partnerDisplayHtml(group, idx) {
       <div class="ptype">${(partner.type_line||'').replace('Legendary Creature — ','').replace('Legendary Planeswalker — ','')}</div>
       <div class="pmechanic-row">
         <span class="mechanic-tag ${group.tagClass}">${group.tagLabel}</span>
+        ${isVariable ? '<span class="mechanic-tag tag-variable">Variable</span>' : ''}
         ${pipHtml(colorId(partner))}
       </div>
+      ${declaredNote}
       <div class="combined-label">Combined identity:</div>
       <div class="combined-pips">${combinedPipHtml(combined)}</div>
       <a class="scryfall-btn" href="${scryfallUrl(partner.name)}" target="_blank" style="margin-top:0.4rem">View on Scryfall ↗</a>
