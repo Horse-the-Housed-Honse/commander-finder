@@ -877,6 +877,7 @@ let viewMode = 'row';
 
 // ── Utility functions ─────────────────────────────────────────────────────────
 
+function isSubsetOfTarget(s) { for (const c of s) if (!TARGET.has(c)) return false; return true; }
 function isExactTarget(s) {
   if (s.size !== TARGET.size) return false;
   for (const c of s) if (!TARGET.has(c)) return false;
