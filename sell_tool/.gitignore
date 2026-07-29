@@ -1,0 +1,5 @@
+*.db
+*.log
+sell_report_*.csv
+sell_report_*.json
+__pycache__/

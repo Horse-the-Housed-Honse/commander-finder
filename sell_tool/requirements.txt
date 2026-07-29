@@ -1,0 +1,6 @@
+# Only needed for the one-time MTGJSON history bootstrap (--bootstrap).
+# Everything else runs on the Python 3 standard library.
+ijson>=3.2
+
+# Only needed to run the offline test suite (python3 -m pytest tests/).
+pytest>=7.0
