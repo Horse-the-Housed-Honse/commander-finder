@@ -128,3 +128,46 @@ All state is in-memory JS variables. Nothing is persisted to localStorage or any
 - **Mobile layout:** The two-panel drawer (anchor left, partner right) stacks awkwardly below ~600px. Needs a responsive rework.
 - **Colorless commanders:** ✅ Done — grey C pip added, mutually exclusive with colored pips.
 - **Variable color identity commanders:** Some cards (e.g. Faceless One, Clara Oswald) let the player choose their color identity at deck-building time. These could theoretically fill any missing color in a pairing. Currently the app shows them only at their printed identity. A future enhancement could flag these cards specially and let users explore what additional identities become reachable by including them.
+
+### Cross-tool: shared card-image viewer module
+
+**Status:** deferred by decision, not blocked. Revisit when a third tool needs it.
+
+**Idea:** the click-to-enlarge image viewer (lightbox + entry cycling) is currently
+embedded in `index.html`. Other MTG tools in this family — e.g. a Card Kingdom
+sell-list tool — will want the same behaviour. Rather than maintaining N copies,
+extract it once into a shared `card-viewer.js` that any tool loads with a plain
+`<script src>` (no build step, consistent with rule 1).
+
+**Scope of what gets shared:** the *viewer code* only. The images themselves already
+work this way — they live on Scryfall's servers and every tool fetches them by URL,
+so there is nothing to centralize there. A shared module would own:
+- `imgUri(card)` / `imgUriLarge(card)` — Scryfall image-URL resolution, including
+  `card_faces` fallback for double-faced cards and the normal→large degradation
+- `openLightbox()` / `closeLightbox()` — overlay show/hide, scroll lock, ESC handling
+- optionally the index-Map cycling state (`getIndex`/`setIndex`/`step`)
+
+**Deliberate decision (2026-08-19):** copy-paste into the second tool instead of
+extracting now. Extracting a shared module pays off only once the same code is being
+maintained in three or more places and duplicate bug-fixes are actually being felt.
+Premature extraction adds hosting/versioning complexity for no benefit while there
+is one consumer. **Trigger to revisit: the third copy-paste.**
+
+**Open questions when it is time:**
+- Where does the shared file live? Same GitHub Pages origin as the tools, its own
+  repo, or a `mtg-tools/shared/` directory served alongside?
+- Cross-origin `<script src>` from GitHub Pages works, but pins every tool to that
+  file's availability. A copied-and-pinned version may still be preferable.
+- Versioning: how does one tool avoid breaking when the shared file changes?
+
+**Reference:** `IMAGE-VIEWER-PATTERN.md` in this repo documents the full pattern —
+layer model, the three non-obvious gotchas (`stopPropagation`, conditional
+scroll-unlock, state-in-a-Map), and a porting checklist. That doc is the interim
+"build once" artifact: prose instead of a module.
+
+### Lightbox-internal entry cycling
+
+The lightbox currently shows a single static image; the ↑↓ cycling happens in the
+modal *behind* it. Paging between entries while staying zoomed in would need
+`lightboxList` / `lightboxPos` state plus arrow-key routing that gives arrows to the
+lightbox while it is open. Sketched in §7 of `IMAGE-VIEWER-PATTERN.md` (~25 lines).
